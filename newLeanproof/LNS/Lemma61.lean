@@ -63,9 +63,12 @@ lemma lemma61sub (hΔ : Δ > 0): Tendsto (fun (i:ℝ)=> f (2 ^ i) r / f (2 ^ i) 
 
 
 
-lemma lemma61 (hr: r>0) (hΔ : Δ > 0): Tendsto (fun i => Qp Δ i r) atBot (𝓝 (Qp_hi Δ r)) := by
+lemma Lemma61 (hr: r>0) (hΔ : Δ > 0): Tendsto (fun i => Qp Δ i r) atBot (𝓝 (Qp_hi Δ r)) := by
   have : Tendsto (fun (i:ℝ)=> f (2 ^ i) r / f (2 ^ i) Δ) atBot (𝓝 (Qp_hi Δ r)) := by apply lemma61sub ; assumption
   apply Filter.Tendsto.congr' _  this;
   have h: Set.EqOn (fun i ↦ f (2 ^ i) r / f (2 ^ i) Δ) (fun i ↦ Qp Δ i r) (Set.Iic (-1:ℝ)):=by
     unfold Set.EqOn; simp; intro x hx; rw[← q_eq]; assumption; linarith; assumption
   apply Filter.eventuallyEq_of_mem _ h; apply Filter.Iic_mem_atBot;
+
+
+lemma Lemma61m (hr: r>0) (hΔ : Δ > 0): Tendsto (fun i => Qm Δ i r) atBot (𝓝 (Qm_lo Δ r)) := by sorry

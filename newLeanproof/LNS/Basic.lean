@@ -72,7 +72,7 @@ def Qm (Δ i r : ℝ) := Em i r / Em i Δ
 
 def Fp b a := - (a + 1) * log (a + 1) + (a + 1) * log (a + b) - log b
 
-
+def Fm b a :=  (1 - a) * log (1 - a) - (1 - a) * log (b - a) + log b
 
 /-
   Fixed-point rounding
@@ -83,6 +83,13 @@ opaque rnd : ℝ → ℝ
 opaque ε  : ℝ
 
 axiom hrnd : ∀ x , |x - rnd x| ≤ ε
+
+axiom rnd_mono: Monotone rnd
+
+axiom rnd_1:  rnd (1:ℝ) = (1:ℝ)
+
+axiom rnd_0:  rnd (0:ℝ) = (0:ℝ)
+
 
 noncomputable def Ep_fix (i r : ℝ) := Φp (i - r) - rnd (Φp i) + rnd (r * rnd (deriv Φp i) )
 
@@ -250,6 +257,7 @@ lemma deriv_Φm : Set.EqOn (deriv Φm)  (fun x=> -(2 : ℝ) ^ x / (1 - (2 : ℝ)
   intro x hx
   simp only [h.right x hx]; field_simp; ring_nf
 
+
 lemma deriv2_Φm:  Set.EqOn (deriv (deriv Φm)) (fun x => -(log 2 *(2 : ℝ) ^ x ) / (1 - (2 : ℝ) ^ x)^2) (Set.Iio (0:ℝ)) := by
   unfold Set.EqOn
   intro x hx
@@ -337,7 +345,7 @@ lemma Ep_r_strictMonotone: StrictMonoOn (Ep i) (Set.Ici 0) :=by
   have i3: (2:ℝ) ^ i -  2 ^ (i - r) > 0 :=by linarith
   positivity
 
-lemma Em_r_strictMono (hi: i ∈  (Set.Iio 0) ): StrictMonoOn (Em i) (Set.Ici 0) :=by
+lemma Em_r_strictMonotone (hi: i ∈  (Set.Iio 0) ): StrictMonoOn (Em i) (Set.Ici 0) :=by
   apply strictMonoOn_of_deriv_pos_Ici0 (continuous_Em_r hi)
   intro r hr; apply deriv_Em_r_pos hi; simp only [Set.mem_Ioi]; exact hr
 
@@ -362,13 +370,13 @@ lemma Ep_r_pos : r > 0 → (Ep i) r > 0 := by
 lemma Em_r_nonneg (hi: i ∈  (Set.Iio 0) ): r ≥ 0 → (Em i) r ≥ 0 := by
   intro hr
   rw[(by simp only [Em, sub_zero, neg_add_cancel, zero_mul, sub_self] :0 = Em i 0 )]
-  apply StrictMonoOn.monotoneOn (Em_r_strictMono hi) (by simp only [Set.mem_Ici, le_refl])
+  apply StrictMonoOn.monotoneOn (Em_r_strictMonotone hi) (by simp only [Set.mem_Ici, le_refl])
   simp only [Set.mem_Ici]; exact hr; exact hr
 
 lemma Em_r_pos (hi: i ∈  (Set.Iio 0) ): r > 0 → (Em i) r > 0 := by
   intro hr
   rw[(by simp only [Em, sub_zero, neg_add_cancel, zero_mul, sub_self] :0 = Em i 0 )]
-  apply Em_r_strictMono hi (by simp only [Set.mem_Ici, le_refl])
+  apply Em_r_strictMonotone hi (by simp only [Set.mem_Ici, le_refl])
   simp only [Set.mem_Ici]; linarith; assumption
 
 
@@ -398,6 +406,7 @@ lemma differentiable_Em_i (hr: r ∈  (Set.Ici 0) ): DifferentiableOn ℝ (Em_i 
   simp only [toFun, Set.mem_Iio, zero_mul, sub_zero, one_mul, zero_add, zero_sub, zero_div,
     mul_zero, Nat.cast_ofNat, rpow_two, neg_mul, mul_neg, neg_neg] at h
   simp only [h]
+
 
 lemma deriv_Ep_i:  deriv (Ep_i r) =
     fun (i : ℝ) => (2^i)/((1+(2:ℝ)^i)^2 * (1+(2:ℝ)^(i-r)))*(2^i * fp (log 2 * r) + gp (log 2 * r)) := by
@@ -430,6 +439,58 @@ lemma deriv_Em_i (hr: r ∈  (Set.Ici 0) ): Set.EqOn (deriv (Em_i r))
   have ie2:= one_minus_two_pow_ne_zero2 i hi
   field_simp
   simp[aux_eq1, aux_eq2]; field_simp; ring_nf
+
+lemma deriv_Ep_r_strictmono: StrictMonoOn (deriv (Ep r)) (Set.Ici 0) :=by
+  rw[deriv_Ep_r]
+  apply strictMonoOn_of_deriv_pos_Ici0
+  have: ∀ x ∈ Set.Ici 0, (2:ℝ)  ≠ 0 ∨ 0 < r - x:=by simp only [Set.mem_Ici, ne_eq,
+    OfNat.ofNat_ne_zero, not_false_eq_true, sub_pos, true_or, implies_true]
+  have: ∀ x ∈ Set.Ici 0, (1 + (2:ℝ)  ^ r) * (1 + 2 ^ (r - x)) ≠ 0:=by norm_num
+  fun_prop (disch := assumption)
+  intro x _
+  get_deriv (fun r_1 ↦ (2 ^ r - 2 ^ (r - r_1)) / ((1 + 2 ^ r) * (1 + 2 ^ (r - r_1)))) at x
+  simp only [List.Forall, toFun, ne_eq, mul_eq_zero, one_plus_two_pow_ne_zero, or_self,
+    not_false_eq_true, id_eq, gt_iff_lt, Nat.ofNat_pos, and_self]
+  simp only [toFun] at h
+  rw[HasDerivAt.deriv h]; simp only [zero_mul, add_zero, zero_sub, neg_mul, one_mul, zero_add,
+    sub_neg_eq_add, mul_neg, Nat.cast_ofNat, rpow_two, gt_iff_lt]
+  have: (2 ^ (r - x) * log 2 * ((1 + 2 ^ r) * (1 + 2 ^ (r - x))) +
+      (2 ^ r - 2 ^ (r - x)) * ((1 + 2 ^ r) * (2 ^ (r - x) * log 2))) /
+    ((1 + 2 ^ r) * (1 + 2 ^ (r - x))) ^ 2 = 2 ^ (r - x) * log 2/ (1 + 2 ^ (r - x))^2 :=by
+    field_simp; ring_nf
+  rw[this]; norm_num
+
+
+lemma deriv_Em_r_strictmono (hi: i ∈ Set.Iio (0:ℝ) ): StrictMonoOn (deriv (Em i)) (Set.Ioi (0:ℝ)) :=by
+  apply StrictMonoOn.congr _ (Set.EqOn.symm (deriv_Em_r hi))
+  apply strictMonoOn_of_deriv_pos (convex_Ioi 0)
+  have: ∀ x ∈ Set.Ioi 0, (2:ℝ) ≠ 0 ∨ 0 < i - x :=by simp only [Set.mem_Ioi, ne_eq,
+    OfNat.ofNat_ne_zero, not_false_eq_true, sub_pos, true_or, implies_true]
+  have: ∀ x ∈ Set.Ioi 0, (1 - (2:ℝ) ^ i) * (1 - 2 ^ (i - x)) ≠ 0:=by
+    intro x hx; simp only [Set.mem_Ioi, Set.mem_Iio] at hx hi
+    have _: (2:ℝ) ^ i < 1 :=by apply rpow_lt_one_of_one_lt_of_neg _ hi; simp only [Nat.one_lt_ofNat]
+    have _:  (2:ℝ) ^ (i-x) < 1 :=by apply rpow_lt_one_of_one_lt_of_neg; simp only [Nat.one_lt_ofNat]; linarith
+    norm_num; constructor <;> linarith
+  fun_prop (disch:= assumption)
+  intro x hx; simp only [interior_Ioi, Set.mem_Ioi, Set.mem_Iio] at hx hi
+  have i1:  (2:ℝ) ^ i < 1 :=by apply rpow_lt_one_of_one_lt_of_neg _ hi; simp only [Nat.one_lt_ofNat]
+  have i1: 1 - (2:ℝ) ^ i ≠ 0:=by linarith
+  have _:  (2:ℝ) ^ (i-x) < 1 :=by apply rpow_lt_one_of_one_lt_of_neg; simp only [Nat.one_lt_ofNat]; linarith
+  have _: 1 - (2:ℝ) ^ (i-x) > 0:=by linarith
+  have i3:  (2:ℝ) ^ i > 2 ^ (i - x) :=by apply rpow_lt_rpow_of_exponent_lt; simp only [Nat.one_lt_ofNat]; linarith
+  get_deriv (fun r ↦ (2 ^ i - 2 ^ (i - r)) / ((1 - 2 ^ i) * (1 - 2 ^ (i - r)))) at x
+  simp only [List.Forall, toFun, ne_eq, mul_eq_zero, not_or, id_eq, gt_iff_lt, Nat.ofNat_pos,
+    and_self, and_true]
+  constructor <;> linarith
+  simp only [toFun] at h; rw[HasDerivAt.deriv h]
+  simp only [zero_mul, add_zero, zero_sub, neg_mul, one_mul, zero_add, sub_neg_eq_add, sub_self,
+    Nat.cast_ofNat, rpow_two]
+  have: (2 ^ (i - x) * log 2 * ((1 - 2 ^ i) * (1 - 2 ^ (i - x))) -
+      (2 ^ i - 2 ^ (i - x)) * ((1 - 2 ^ i) * (2 ^ (i - x) * log 2))) /
+    ((1 - 2 ^ i) * (1 - 2 ^ (i - x))) ^ 2 = 2 ^ (i - x) * log 2/(1 - 2 ^ (i - x))^2 :=by
+    field_simp; ring_nf
+  rw[this]; positivity
+
 
 lemma differentiable_fp : Differentiable ℝ fp  :=by
   unfold fp; fun_prop
@@ -552,6 +613,15 @@ lemma aux_eq3: log (1 + 2 ^ (i:ℝ) / 2 ^ r) = log (2^i + 2^r) - r * log 2 :=by
   rw[this, log_div, log_rpow]; simp only [Nat.ofNat_pos];
   linarith; linarith
 
+lemma aux_eq4 (hi: i<0) (hr: r>0): log (1 - 2 ^ (i:ℝ) / 2 ^ r) = log (2^r - 2^i) - r * log 2 :=by
+  have : (2:ℝ) ^ i > 0 :=by norm_num
+  have : (2:ℝ) ^ r > 0 :=by norm_num
+  have: 1 - (2:ℝ)  ^ (i:ℝ) / 2 ^ r =  (2^r - 2^i)  / 2 ^ r :=by field_simp;
+  rw[this, log_div, log_rpow]; simp only [Nat.ofNat_pos];
+  have : (2:ℝ) ^ i < 1 :=by apply rpow_lt_one_of_one_lt_of_neg (by simp only [Nat.one_lt_ofNat]) hi
+  have : (2:ℝ) ^ r > 1 :=by apply one_lt_rpow (by simp only [Nat.one_lt_ofNat]) hr
+  linarith; linarith
+
 
 def Qp_lo (Δ r : ℝ) := Qp Δ 0 r
 
@@ -586,6 +656,34 @@ def dQp_Range_YX (Y X : ℝ)  := (Y *(X-1))/ (X*X*(X+1)*(B Y + A Y)* B Y)  *(-A 
 
 
 
+def Qm_hi (Δ r : ℝ) := Qm Δ (-1) r
+
+def Qm_lo (Δ r : ℝ) := (2 ^ (-r) + r * log 2 - 1) / (2 ^ (-Δ) + Δ * log 2 - 1)
+
+
+def Qm_Range (Δ r : ℝ) := Qm_hi Δ r  - Qm_lo Δ r
+
+def Vm (X:ℝ) := 2*log X - log (2*X-1)
+
+def Qm_lo_YX (Y X: ℝ) := U X/U Y
+
+def Qm_hi_YX (Y X : ℝ) := Vm X/Vm Y
+
+def Qm_Range_YX (Y X : ℝ) := Qm_hi_YX Y X - Qm_lo_YX Y X
+
+def Am (Y:ℝ) := 2*Y*log Y - 2*Y*log (2*Y-1) + 2*Y  -2
+
+def Bm (Y:ℝ) := Y*(Vm Y)
+
+def Rm_opt (Δ : ℝ) :=
+  let X := 2 ^ Δ
+  logb 2 (Bm X / Am X)
+
+def Cm (Y:ℝ) := 2*log Y - 2*log (2*Y-1) + 2 - 2/Y
+
+def Max_Xm (Y:ℝ) := Bm Y / Am Y
+
+def dQm_Range_YX (Y X : ℝ)  := (X-1)/ (Y*X*X*(2*X-1)*U Y* Vm Y) *(-Am Y * X + Bm Y)
 
 
 

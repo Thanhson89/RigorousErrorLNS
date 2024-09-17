@@ -2,11 +2,12 @@ import LNS.Common
 import LNS.Tactic
 import LNS.Basic
 import LNS.Lemma62
+import LNS.Lemma61
 
 noncomputable section
 open LNS
-
 open Real
+open Real Filter Topology
 
 lemma U_pos : X > 1 →  U X > 0 :=by
   unfold U
@@ -269,4 +270,31 @@ lemma lemma63sub  (hΔ  : r < Δ) (hr : 0 < r) : Qp_Range Δ r ≤ Qp_Range Δ (
     positivity
   rw[this]
   apply max_Qp_Range_YX i2
-  apply rpow_lt_rpow_of_exponent_lt (by simp only [Nat.one_lt_ofNat]) hΔ 
+  apply rpow_lt_rpow_of_exponent_lt (by simp only [Nat.one_lt_ofNat]) hΔ
+
+
+lemma q_lower_bound (hi : i ≤ 0) (hr1 : 0 < r) (hr2 : r < Δ) : Qp_lo Δ r ≤ Qp Δ i r :=
+  StrictAntiOn.antitoneOn (Lemma62 hr1 hr2) hi Set.right_mem_Iic hi
+
+lemma q_upper_bound (hi : i ≤ 0) (hr : 0 < r) (hΔ : r < Δ) : Qp Δ i r ≤ Qp_hi Δ r := by
+  apply ge_of_tendsto (Lemma61 hr (by linarith))
+  simp only [eventually_atBot]
+  use i; intro b hb;
+  apply StrictAntiOn.antitoneOn (Lemma62 hr hΔ) (by simp only [Set.mem_Iic]; linarith) (by simp only [Set.mem_Iic]; linarith) hb
+
+
+lemma lemma63 (hi : i ≤ 0) (hc : c ≤ 0) (hr : 0 < r) (hΔ : r < Δ) :
+    |Qp Δ i r - Qp Δ c r| ≤ Qp_hi Δ (Rp_opt Δ) - Qp_lo Δ (Rp_opt Δ) := by
+  have i1:  Qp_hi Δ r - Qp_lo Δ r ≤ Qp_hi Δ (Rp_opt Δ) - Qp_lo Δ (Rp_opt Δ):=by apply lemma63sub hΔ hr
+  have case1:  Qp Δ i r - Qp Δ c r ≥ 0 → |Qp Δ i r - Qp Δ c r| ≤ Qp_hi Δ (Rp_opt Δ) - Qp_lo Δ (Rp_opt Δ) :=by
+    intro i0
+    have i2: Qp Δ i r ≤ Qp_hi Δ r := by apply q_upper_bound; linarith; assumption; assumption;
+    have i3: Qp_lo Δ r ≤ Qp Δ c r := by apply q_lower_bound; assumption; assumption; assumption;
+    have e0:   |Qp Δ i r - Qp Δ c r| = Qp Δ i r - Qp Δ c r :=by apply abs_of_nonneg; linarith
+    linarith
+  apply by_cases case1; simp;
+  intro i0
+  have i2: Qp Δ c r ≤ Qp_hi Δ r := by apply q_upper_bound; linarith; assumption; assumption; 
+  have i3: Qp_lo Δ r ≤ Qp Δ i r := by apply q_lower_bound; assumption; assumption; assumption;
+  have e0:   |Qp Δ i r - Qp Δ c r| = -(Qp Δ i r - Qp Δ c r) :=by apply abs_of_neg; linarith
+  linarith
