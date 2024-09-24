@@ -9,19 +9,7 @@ open LNS
 open Real
 open Real Filter Topology
 
-lemma U_pos : X > 1 →  U X > 0 :=by
-  unfold U
-  apply pos_of_deriv_pos_Ici
-  have : ∀ x ∈ Set.Ici (1:ℝ) , x ≠ 0 := by simp only [Set.mem_Ici, ne_eq]; intros; linarith
-  fun_prop (disch:= assumption); simp only [ne_eq, one_ne_zero, not_false_eq_true, div_self,
-    log_one, add_zero, sub_self]
-  intro x hx
-  get_deriv (fun {X} ↦ 1 / X + log X - 1) at x
-  simp only [List.Forall, toFun, ne_eq, id_eq, and_self]; linarith
-  simp only [toFun] at h
-  rw[HasDerivAt.deriv h];
-  field_simp; apply lt_of_sub_pos; rw[(by ring: x ^ 2 - x = x*(x-1))];
-  apply mul_pos (by linarith) (by linarith)
+
 
 lemma V_pos : X > 1 →  V X > 0 :=by
   unfold V
@@ -294,7 +282,7 @@ lemma lemma63 (hi : i ≤ 0) (hc : c ≤ 0) (hr : 0 < r) (hΔ : r < Δ) :
     linarith
   apply by_cases case1; simp;
   intro i0
-  have i2: Qp Δ c r ≤ Qp_hi Δ r := by apply q_upper_bound; linarith; assumption; assumption; 
+  have i2: Qp Δ c r ≤ Qp_hi Δ r := by apply q_upper_bound; linarith; assumption; assumption;
   have i3: Qp_lo Δ r ≤ Qp Δ i r := by apply q_lower_bound; assumption; assumption; assumption;
   have e0:   |Qp Δ i r - Qp Δ c r| = -(Qp Δ i r - Qp Δ c r) :=by apply abs_of_neg; linarith
   linarith
